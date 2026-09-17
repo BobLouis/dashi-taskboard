@@ -3848,6 +3848,7 @@ export function App() {
                         currentUser={currentUser}
                         showCover={boardDisplaySettings.cover}
                         showBody={boardDisplaySettings.body}
+                        showCreatedAt={Boolean(boardDisplaySettings.createdAt)}
                         createEnabled={!isJiraProject}
                         onCreateLabel={persistProjectLabel}
                         onCreate={(initialStatus) => setEditor({ status: initialStatus })}
@@ -3884,6 +3885,7 @@ export function App() {
                     currentUser={currentUser}
                     showCover={boardDisplaySettings.cover}
                     showBody={boardDisplaySettings.body}
+                    showCreatedAt={Boolean(boardDisplaySettings.createdAt)}
                     onCreateLabel={persistProjectLabel}
                     restoringTaskId={restoringTaskId}
                     deletingTaskId={deletingArchivedTaskId}
