@@ -569,6 +569,7 @@ function attachmentFromRow(row) {
     taskId: row.task_id,
     commentId: row.comment_id,
     kind: row.kind,
+    bodyFallback: row.body_fallback === 1,
     filename: row.filename,
     contentType: row.content_type,
     size: row.size,
@@ -1365,6 +1366,17 @@ async function updateTask(env, id, input, actor) {
     SET ${assignments.join(", ")}
     WHERE id = ? AND version = ?${relationGuard}
   `).bind(...values)];
+  if (Object.hasOwn(input.changes, "description")) {
+    // Keep this immediately after the body UPDATE: changes() must describe that
+    // statement, including its version/relation guard, not a later batch write.
+    statements.push(env.DB.prepare(`
+      UPDATE attachments
+      SET body_fallback = 0,
+        change_revision = (SELECT revision + 1 FROM global_revision WHERE singleton = 1)
+      WHERE task_id = ? AND comment_id IS NULL AND body_fallback = 1
+        AND changes() = 1
+    `).bind(current.id));
+  }
   const activityChanges = taskFieldChanges(currentTask, activityValues);
   if (activityChanges.length > 0) {
     statements.push(taskActivityStatement(
@@ -2178,7 +2190,7 @@ async function updateComment(env, id, input) {
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
     : "";
-  const result = await env.DB.prepare(`
+  const [result] = await env.DB.batch([env.DB.prepare(`
     UPDATE comments
     SET
       body = ?,
@@ -2193,7 +2205,12 @@ async function updateComment(env, id, input) {
     now(),
     current.id,
     input.version,
-  ).run();
+  ), env.DB.prepare(`
+    UPDATE attachments
+    SET body_fallback = 0,
+      change_revision = (SELECT revision + 1 FROM global_revision WHERE singleton = 1)
+    WHERE comment_id = ? AND body_fallback = 1 AND changes() = 1
+  `).bind(current.id)]);
   if (!changed(result)) {
     const latest = await requireCommentRow(env, current.id);
     throw new ApiError(

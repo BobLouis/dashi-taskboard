@@ -161,6 +161,7 @@ function attachmentFromRow(row) {
     taskId: row.task_id,
     commentId: row.comment_id,
     kind: row.kind,
+    bodyFallback: row.body_fallback === 1,
     filename: row.filename,
     contentType: row.content_type,
     size: row.size,
@@ -362,6 +363,7 @@ export class TaskboardDatabase {
         task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         comment_id TEXT REFERENCES comments(id) ON DELETE CASCADE,
         kind TEXT NOT NULL CHECK (kind IN ('inline', 'attachment')),
+        body_fallback INTEGER NOT NULL DEFAULT 1 CHECK (body_fallback IN (0, 1)),
         filename TEXT NOT NULL,
         content_type TEXT NOT NULL,
         size INTEGER NOT NULL CHECK (size >= 0),
@@ -785,6 +787,9 @@ export class TaskboardDatabase {
             )
           )
       `);
+    }
+    if (!attachmentColumns.some((column) => column.name === "body_fallback")) {
+      this.database.exec("ALTER TABLE attachments ADD COLUMN body_fallback INTEGER NOT NULL DEFAULT 1 CHECK (body_fallback IN (0, 1))");
     }
     if (!attachmentColumns.some((column) => column.name === "change_revision")) {
       this.database.exec("ALTER TABLE attachments ADD COLUMN change_revision INTEGER NOT NULL DEFAULT 0");
@@ -2016,6 +2021,9 @@ export class TaskboardDatabase {
       if (result.changes !== 1) {
         this.#throwMissingOrConflict(id, version);
       }
+      if (Object.hasOwn(changes, "description")) {
+        this.#consumeAttachmentBodyFallback(current.id, null);
+      }
       if (projectChanged) {
         this.database.prepare(`
           UPDATE projects SET updated_at = ? WHERE id IN (?, ?)
@@ -2448,6 +2456,7 @@ export class TaskboardDatabase {
       if (result.changes !== 1) {
         this.#throwMissingCommentOrConflict(id, version);
       }
+      this.#consumeAttachmentBodyFallback(current.taskId, current.id);
       this.database.exec("COMMIT");
     } catch (error) {
       this.database.exec("ROLLBACK");
@@ -2686,6 +2695,19 @@ export class TaskboardDatabase {
       WHERE comment_id = ?
       ORDER BY created_at, id
     `).all(commentId).map(attachmentFromRow);
+  }
+
+  #consumeAttachmentBodyFallback(taskId, commentId) {
+    const candidates = this.database.prepare(`
+      SELECT id FROM attachments
+      WHERE task_id = ? AND comment_id IS ? AND body_fallback = 1
+    `).all(taskId, commentId);
+    const update = this.database.prepare(`
+      UPDATE attachments SET body_fallback = 0, change_revision = ? WHERE id = ?
+    `);
+    for (const attachment of candidates) {
+      update.run(this.#nextCommentAttachmentRevision(), attachment.id);
+    }
   }
 
   #nextCommentAttachmentRevision() {

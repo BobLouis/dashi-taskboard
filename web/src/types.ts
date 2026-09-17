@@ -506,6 +506,7 @@ export interface Attachment {
   taskId: string;
   commentId: string | null;
   kind: "inline" | "attachment";
+  bodyFallback: boolean;
   filename: string;
   contentType: string;
   size: number;

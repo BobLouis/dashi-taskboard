@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { readIssueIdentifier } from "./issueRoute";
+import { resolvePersistedAttachmentUrl } from "./api";
 import type { Attachment, Task } from "./types";
 
 interface InlineTextSegment {
@@ -278,6 +279,28 @@ function composerReferenceFromNode(
     referenceKey,
     label,
   };
+}
+
+// Match rendered references, not URLs in code blocks, comments or unused definitions.
+export function referencedAttachmentIds(value: string): Set<string> {
+  const root = inlineMediaMarkdownParser.parse(value);
+  const getDefinition = definitions(root);
+  const nodes = [root as MarkdownAstNode];
+  const ids = new Set<string>();
+  while (nodes.length > 0) {
+    const node = nodes.pop()!;
+    const url = node.type === "link" || node.type === "image"
+      ? node.url
+      : node.type === "linkReference" || node.type === "imageReference"
+        ? getDefinition(node.identifier)?.url
+        : undefined;
+    if (url) {
+      const reference = parseInternalDocumentUrl(resolvePersistedAttachmentUrl(url), document.baseURI);
+      if (reference?.type === "attachment") ids.add(reference.attachmentId);
+    }
+    if (node.children) nodes.push(...node.children);
+  }
+  return ids;
 }
 
 export function createInlineMediaSegments(
