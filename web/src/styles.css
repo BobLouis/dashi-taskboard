@@ -3083,12 +3083,6 @@ kbd {
   padding-right: 80px;
 }
 
-.image-preview-dialog > .attachment-local-actions {
-  position: absolute;
-  top: 8px;
-  right: 44px;
-}
-
 .issue-description-document .document-attachment-preview + br {
   display: none;
 }

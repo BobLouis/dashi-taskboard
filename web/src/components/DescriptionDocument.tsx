@@ -129,7 +129,7 @@ export const DescriptionDocument = memo(function DescriptionDocument({
   onCopyAttachmentPath?: (path: string, announcement: string) => void;
 }) {
   const [previewImage, setPreviewImage] = useState<{
-    src: string; alt: string; attachment: Attachment | null;
+    src: string; alt: string;
   } | null>(null);
 
   useEffect(() => {
@@ -151,13 +151,9 @@ export const DescriptionDocument = memo(function DescriptionDocument({
         event.preventDefault();
         event.stopPropagation();
         const src = event.currentTarget.currentSrc || event.currentTarget.src;
-        const reference = parseInternalDocumentUrl(src, document.baseURI);
         setPreviewImage({
           src,
           alt: event.currentTarget.alt,
-          attachment: reference?.type === "attachment"
-            ? attachments.find((attachment) => attachment.id === reference.attachmentId) ?? null
-            : null,
         });
       } : undefined}
       onCopy={(event: ClipboardEvent<HTMLDivElement>) => {
@@ -230,7 +226,7 @@ export const DescriptionDocument = memo(function DescriptionDocument({
       }}
       renderLinkActions={onCopyAttachmentPath ? (href) => {
         const attachment = href ? referencedAttachment(href, attachments) : null;
-        return attachment && !attachment.contentType.startsWith("video/")
+        return attachment && !attachment.contentType.startsWith("video/") && !attachment.contentType.startsWith("image/")
           ? <AttachmentLocalActions key={attachment.id} attachment={attachment} onCopy={onCopyAttachmentPath} />
           : null;
       } : undefined}
@@ -275,13 +271,6 @@ export const DescriptionDocument = memo(function DescriptionDocument({
           aria-label={previewImage.alt || "Image preview"}
         >
           <img src={previewImage.src} alt={previewImage.alt} />
-          {previewImage.attachment && onCopyAttachmentPath && (
-            <AttachmentLocalActions
-              key={previewImage.attachment.id}
-              attachment={previewImage.attachment}
-              onCopy={onCopyAttachmentPath}
-            />
-          )}
           <button
             className="icon-button display-settings-close image-preview-close"
             type="button"
