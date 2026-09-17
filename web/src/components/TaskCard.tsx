@@ -448,10 +448,7 @@ export function TaskCard({
     () => showBody ? taskBodyText(task.description) : "",
     [showBody, task.description],
   );
-  const hasProperties = task.priority !== "none"
-    || task.labels.length > 0
-    || task.dueDate
-    || Boolean(task.relations.parent);
+  const hasProperties = task.priority !== "none" || task.labels.length > 0 || task.dueDate;
   const showsProperties = Boolean(projectName)
     || (!processingCard && (hasProperties || showsInlineParticipants || showsConversation));
   const propertyDisabled = savingProperty !== null;
@@ -594,15 +591,6 @@ export function TaskCard({
               onOpenChange={(open) => setPropertyMenu(open ? "assignee" : null)}
               onChange={(assigneeTarget) => updateProperty({ assigneeTarget }, "assignee")}
             />
-          )}
-          {!processingCard && task.relations.parent && (
-            <span
-              className="card-parent-title"
-              title={task.relations.parent.title}
-              aria-label={text(`父议题：${task.relations.parent.title}`, `Parent: ${task.relations.parent.title}`)}
-            >
-              {task.relations.parent.title}
-            </span>
           )}
           {!processingCard && showsConversation && <span className="card-properties-spacer" aria-hidden="true" />}
           {!processingCard && showsConversation && (

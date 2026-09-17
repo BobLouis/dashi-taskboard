@@ -3849,57 +3849,6 @@ kbd {
   text-align: left;
 }
 
-.detail-parent-path-row {
-  align-items: start;
-}
-
-.detail-parent-path {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  min-width: 0;
-  gap: 2px;
-  padding: 5px 9px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.detail-parent-path-link,
-.detail-parent-path-unavailable {
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.detail-parent-path-link {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  text-align: left;
-}
-
-.detail-parent-path-link:hover,
-.detail-parent-path-link:focus-visible {
-  color: var(--text-primary);
-  text-decoration: underline;
-}
-
-.detail-parent-path-unavailable {
-  color: var(--text-tertiary);
-  font-style: italic;
-}
-
-.detail-parent-path-chevron {
-  flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
-  color: var(--text-tertiary);
-}
-
 .issue-relation-sidebar {
   margin-top: 14px;
   padding-top: 10px;
@@ -9804,14 +9753,4 @@ kbd {
 @media (max-width: 520px) {
   .dashboard-metric { border-top: var(--border-hairline) solid var(--border); }
   .dashboard-metric:first-child { border-top: 0; }
-}
-
-.card-parent-title {
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-secondary);
-  font-size: 11px;
 }
