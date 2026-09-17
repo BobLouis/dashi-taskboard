@@ -1844,11 +1844,18 @@ kbd {
   min-width: 0;
 }
 
+.card-properties .task-property-picker {
+  flex-shrink: 0;
+}
+
 .card-label-trigger {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   min-width: 0;
+  max-width: 100%;
   height: 20px;
+  overflow: hidden;
   gap: 4px;
   padding: 0;
   border: 0;
@@ -1856,6 +1863,11 @@ kbd {
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.card-label-trigger .label-chip {
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .card-label-picker .label-popover {
@@ -7956,10 +7968,6 @@ kbd {
   white-space: normal;
 }
 
-.card-properties {
-  flex-wrap: wrap;
-}
-
 .card-properties:empty {
   display: none;
 }
@@ -8242,7 +8250,8 @@ kbd {
   margin-left: -5px;
 }
 
-.task-card .actor-avatar-agent {
+.task-card .actor-avatar-agent,
+.dashboard-role-row .actor-avatar-agent {
   box-sizing: border-box;
   overflow: hidden;
   padding: 1px;
@@ -8253,7 +8262,8 @@ kbd {
   box-shadow: none;
 }
 
-.task-card .actor-avatar-agent-image {
+.task-card .actor-avatar-agent-image,
+.dashboard-role-row .actor-avatar-agent-image {
   border-radius: 50%;
 }
 
