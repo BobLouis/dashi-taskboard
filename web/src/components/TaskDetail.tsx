@@ -5,6 +5,7 @@ import {
   uploadInlineAttachments,
 } from "../inlineAttachments";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -117,6 +118,7 @@ interface TaskDetailProps {
   attachmentsRevision: number;
   onCreateLabel: (label: string) => Promise<void>;
   onDeleteLabel: (label: string) => Promise<void>;
+  onCreateChild: (parent: Task) => void;
   onUpdate: (task: Task, changes: Partial<TaskDraft>) => Promise<Task>;
   onOpenTask: (task: TaskRelationSummary) => void;
   onAddRelation: (
@@ -219,6 +221,20 @@ function contextLabel(
   if (context.type === "branch") return context.branch;
   const folder = context.path.split(/[\\/]/).filter(Boolean).at(-1) ?? context.path;
   return `${context.branch ?? text("分离 HEAD", "detached")} · ${folder}`;
+}
+
+function parentPathForTask(task: Task, tasks: Task[]) {
+  const taskById = new Map(tasks.map((candidate) => [candidate.id, candidate]));
+  const path: Array<{ summary: TaskRelationSummary; task: Task | null }> = [];
+  const visited = new Set<string>();
+  let parent = task.relations.parent;
+  while (parent && !visited.has(parent.id)) {
+    visited.add(parent.id);
+    const fullTask = taskById.get(parent.id) ?? null;
+    path.unshift({ summary: parent, task: fullTask });
+    parent = fullTask?.relations.parent ?? null;
+  }
+  return path;
 }
 
 const ACTIVITY_FIELD_LABELS: Record<string, readonly [string, string]> = {
@@ -404,6 +420,7 @@ export function TaskDetail({
   attachmentsRevision,
   onCreateLabel,
   onDeleteLabel,
+  onCreateChild,
   onUpdate,
   onOpenTask,
   onAddRelation,
@@ -1042,6 +1059,7 @@ export function TaskDetail({
     .filter((actor, index, actors) => (
       actors.findIndex((candidate) => actorKey(candidate) === actorKey(actor)) === index
     ));
+  const parentPath = parentPathForTask(currentTask, tasks);
   const activityTimeline = [
     ...taskActivities.flatMap((activity) => activity.changes.map((change, index) => ({
       kind: "change" as const,
@@ -1276,6 +1294,7 @@ export function TaskDetail({
             <IssueSubIssues
               task={currentTask}
               tasks={tasks}
+              onCreateChild={() => onCreateChild(currentTask)}
               onOpenTask={onOpenTask}
               onAddRelation={(anchor, type, relatedTaskId) => applyRelationMutation(
                 () => onAddRelation(anchor, type, relatedTaskId),
@@ -1717,6 +1736,38 @@ export function TaskDetail({
               </button>
             </div>
             <h2>{text("属性", "Properties")}</h2>
+            {parentPath.length > 0 && (
+              <div className="detail-property-row detail-parent-path-row">
+                <span className="detail-property-label">{text("父议题", "Parent")}</span>
+                <div className="detail-parent-path" aria-label={text("父议题路径", "Parent path")}>
+                  {parentPath.map(({ summary, task: fullTask }, index) => {
+                    const unavailable = !fullTask || fullTask.archivedAt !== null || summary.archivedAt !== null;
+                    return (
+                      <Fragment key={summary.id}>
+                        {index > 0 && <LinearIcon className="detail-parent-path-chevron" name="chevronRight" />}
+                        {unavailable ? (
+                          <span
+                            className="detail-parent-path-unavailable"
+                            title={summary.title}
+                          >
+                            {text("父议题不可用", "Parent unavailable")}
+                          </span>
+                        ) : (
+                          <button
+                            className="detail-parent-path-link"
+                            type="button"
+                            title={summary.title}
+                            onClick={() => onOpenTask(summary)}
+                          >
+                            {summary.title}
+                          </button>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="detail-property-row">
               <span className="detail-property-label">{text("状态", "Status")}</span>
               <TaskPropertyPicker
