@@ -1884,8 +1884,8 @@ kbd {
 .task-card-created-at {
   display: block;
   margin-top: 8px;
-  color: var(--text-secondary);
-  font-size: 12px;
+  color: var(--text-tertiary);
+  font-size: 11px;
   line-height: 18px;
 }
 
@@ -3088,10 +3088,15 @@ kbd {
 }
 
 .document-attachment-preview > .attachment-local-actions {
+  visibility: hidden;
   position: absolute;
   top: 50%;
   right: 8px;
   transform: translateY(-50%);
+}
+
+.document-attachment-preview:hover > .attachment-local-actions {
+  visibility: visible;
 }
 
 .document-attachment-preview:has(> .attachment-local-actions) .document-attachment-card {
