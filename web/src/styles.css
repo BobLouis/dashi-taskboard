@@ -3080,10 +3080,15 @@ kbd {
 }
 
 .document-attachment-preview > .attachment-local-actions {
+  visibility: hidden;
   position: absolute;
   top: 50%;
   right: 8px;
   transform: translateY(-50%);
+}
+
+.document-attachment-preview:hover > .attachment-local-actions {
+  visibility: visible;
 }
 
 .document-attachment-preview:has(> .attachment-local-actions) .document-attachment-card {
