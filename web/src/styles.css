@@ -2622,6 +2622,16 @@ kbd {
   font-weight: 600;
 }
 
+.issue-conversation-session-id {
+  min-width: 0;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  user-select: text;
+}
+
 .issue-conversation-copy {
   display: inline-flex;
   align-items: center;
@@ -8191,7 +8201,7 @@ kbd {
   pointer-events: auto;
 }
 
-.task-conversation-trigger:not(.is-multiple) {
+.task-conversation-trigger:not(.is-multiple):not(.is-agent-session) {
   width: 20px;
   min-width: 20px;
   padding: 0;

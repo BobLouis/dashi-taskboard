@@ -6,6 +6,37 @@ import {
   parseSortOrder, parseDueDate, parseRecurrence,
 } from "./api-fields.mjs";
 
+export function parseAgentSession(value) {
+  if (value === undefined || value === null) return value;
+  assertPlainObject(value);
+  assertAllowedKeys(value, new Set(["platform", "sessionId"]));
+  if (!["claude", "pi", "agy", "grok"].includes(value.platform)) {
+    throw new ApiError(400, "INVALID_FIELD", "agentSession.platform must be claude, pi, agy, or grok");
+  }
+  const { platform, sessionId } = value;
+  const maxLength = platform === "pi" ? 4096 : 256;
+  if (
+    typeof sessionId !== "string"
+    || sessionId.trim().length === 0
+    || sessionId.length > maxLength
+    || /^\s*-/.test(sessionId)
+    || /[\x00-\x1f\x7f]/.test(sessionId)
+  ) {
+    throw new ApiError(400, "INVALID_FIELD",
+      `agentSession.sessionId must contain 1 to ${maxLength} characters, without control characters or a leading option dash`);
+  }
+  // Preserve the exact ID/path; in particular, do not trim or normalize Pi paths.
+  return { platform, sessionId };
+}
+
+function parseInputAgentSession(body) {
+  const agentSession = parseAgentSession(body.agentSession);
+  if (agentSession && body.threadId !== undefined) {
+    throw new ApiError(400, "INVALID_FIELD", "Use agentSession or Codex threadId for controller attribution, not both");
+  }
+  return agentSession;
+}
+
 export function parseThreadBinding(value) {
   if (value === undefined || value === null) return value;
   assertPlainObject(value);
@@ -58,50 +89,54 @@ export function parseThreadBinding(value) {
 
 export function parseMove(body) {
   assertPlainObject(body);
-  assertAllowedKeys(body, new Set(["version", "status", "sortOrder", "threadId", "threadBinding"]));
+  assertAllowedKeys(body, new Set(["version", "status", "sortOrder", "threadId", "threadBinding", "agentSession"]));
   return {
     version: parseVersion(body.version),
     status: parseStatus(body.status),
     sortOrder: body.sortOrder === undefined ? undefined : parseSortOrder(body.sortOrder),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
   };
 }
 
 export function parseVersionMutation(body) {
   assertPlainObject(body);
-  assertAllowedKeys(body, new Set(["version", "threadId", "threadBinding"]));
+  assertAllowedKeys(body, new Set(["version", "threadId", "threadBinding", "agentSession"]));
   return {
     version: parseVersion(body.version),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
   };
 }
 
 export function parseRelationMutation(body) {
   assertPlainObject(body);
-  assertAllowedKeys(body, new Set(["version", "threadId", "threadBinding", "origin"]));
+  assertAllowedKeys(body, new Set(["version", "threadId", "threadBinding", "agentSession", "origin"]));
   return {
     version: parseVersion(body.version),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
     origin: parseRelationOrigin(body.origin),
   };
 }
 
 export function parseCommentCreate(body) {
   assertPlainObject(body);
-  assertAllowedKeys(body, new Set(["body", "threadId", "threadBinding"]));
+  assertAllowedKeys(body, new Set(["body", "threadId", "threadBinding", "agentSession"]));
   return {
     body: stringField(body.body ?? "", "body", { maxLength: 100_000 }),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
   };
 }
 
 export function parseCommentPatch(body) {
   assertPlainObject(body);
-  assertAllowedKeys(body, new Set(["version", "body", "threadId", "threadBinding"]));
+  assertAllowedKeys(body, new Set(["version", "body", "threadId", "threadBinding", "agentSession"]));
   if (body.body === undefined) {
     throw new ApiError(400, "INVALID_FIELD", "'body' is required");
   }
@@ -110,13 +145,14 @@ export function parseCommentPatch(body) {
     body: stringField(body.body, "body", { maxLength: 100_000 }),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
   };
 }
 
 export function parseTaskCreate(body, parseDevelopmentContext) {
   assertPlainObject(body);
   assertAllowedKeys(body, new Set([
-    "projectId", "title", "description", "status", "priority", "labels", "sortOrder", "threadId", "threadBinding",
+    "projectId", "title", "description", "status", "priority", "labels", "sortOrder", "threadId", "threadBinding", "agentSession",
     "assigneeTarget", "developmentContext", "startDate", "dueDate", "recurrence",
   ]));
   const projectId = validateProjectId(body.projectId ?? DEFAULT_PROJECT_ID);
@@ -130,6 +166,7 @@ export function parseTaskCreate(body, parseDevelopmentContext) {
     sortOrder: body.sortOrder === undefined ? undefined : parseSortOrder(body.sortOrder),
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession: parseInputAgentSession(body),
     assigneeTarget: parseAssigneeTarget(body.assigneeTarget),
     developmentContext: parseDevelopmentContext(body.developmentContext ?? null),
     startDate: parseDueDate(body.startDate ?? null, "startDate"),
@@ -146,7 +183,7 @@ export function parseTaskCreate(body, parseDevelopmentContext) {
 function assertTaskPatchBody(body) {
   assertPlainObject(body);
   assertAllowedKeys(body, new Set([
-    "version", "projectId", "title", "description", "status", "priority", "labels", "threadId", "threadBinding",
+    "version", "projectId", "title", "description", "status", "priority", "labels", "threadId", "threadBinding", "agentSession",
     "assigneeTarget", "developmentContext", "startDate", "dueDate", "recurrence",
   ]));
 }
@@ -166,8 +203,8 @@ function parseTaskPatchChanges(body, parseDevelopmentContext) {
   return changes;
 }
 
-function assertTaskPatchFields(changes, assigneeTarget) {
-  if (Object.keys(changes).length === 0 && assigneeTarget === undefined) {
+function assertTaskPatchFields(changes, assigneeTarget, agentSession) {
+  if (Object.keys(changes).length === 0 && assigneeTarget === undefined && agentSession === undefined) {
     throw new ApiError(400, "INVALID_BODY", "PATCH requires at least one task field");
   }
 }
@@ -177,25 +214,28 @@ export function parseTaskPatch(body, parseDevelopmentContext) {
   const version = parseVersion(body.version);
   const threadId = parseThreadId(body.threadId);
   const threadBinding = parseThreadBinding(body.threadBinding);
+  const agentSession = parseInputAgentSession(body);
   const assigneeTarget = parseAssigneeTarget(body.assigneeTarget);
   const changes = parseTaskPatchChanges(body, parseDevelopmentContext);
   if (changes.recurrence && body.dueDate === null) {
     throw new ApiError(400, "INVALID_FIELD", "A recurring issue requires 'dueDate'");
   }
-  assertTaskPatchFields(changes, assigneeTarget);
-  return { version, changes, threadId, threadBinding, assigneeTarget };
+  assertTaskPatchFields(changes, assigneeTarget, agentSession);
+  return { version, changes, threadId, threadBinding, agentSession, assigneeTarget };
 }
 
 export function parseCloudTaskPatch(body, parseDevelopmentContext) {
   assertTaskPatchBody(body);
+  const agentSession = parseInputAgentSession(body);
   const changes = parseTaskPatchChanges(body, parseDevelopmentContext);
   const assigneeTarget = parseAssigneeTarget(body.assigneeTarget);
-  assertTaskPatchFields(changes, assigneeTarget);
+  assertTaskPatchFields(changes, assigneeTarget, agentSession);
   return {
     version: parseVersion(body.version),
     changes,
     threadId: parseThreadId(body.threadId),
     threadBinding: parseThreadBinding(body.threadBinding),
+    agentSession,
     assigneeTarget,
   };
 }
