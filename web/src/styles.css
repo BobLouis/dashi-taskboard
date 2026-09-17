@@ -1813,6 +1813,10 @@ kbd {
   overflow: visible;
 }
 
+.task-card.is-property-menu-open > .card-properties {
+  z-index: 3;
+}
+
 .card-property-control {
   position: relative;
   cursor: pointer;
