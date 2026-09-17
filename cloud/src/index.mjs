@@ -9,6 +9,7 @@ import {
 import { taskRelationsQuery, taskRelationsFromRows } from "../../shared/task-relations.mjs";
 import {
   commentConversationTitle,
+  agentSessionFromRow,
   threadBindingFromRow,
   legacyLocalThreadIdFromRow,
   storedThreadBinding,
@@ -500,6 +501,7 @@ function taskFromRow(row) {
     threadId: row.thread_id,
     threadBinding: threadBindingFromRow(row),
     legacyLocalThreadId: legacyLocalThreadIdFromRow(row),
+    agentSession: agentSessionFromRow(row),
     creatorType: row.creator_type,
     creatorId: row.creator_id,
     creatorName: row.creator_name,
@@ -549,6 +551,7 @@ function commentFromRow(row, attachments = []) {
     threadId: row.thread_id,
     threadBinding: threadBindingFromRow(row),
     legacyLocalThreadId: legacyLocalThreadIdFromRow(row),
+    agentSession: agentSessionFromRow(row),
     authorType: row.author_type,
     authorId: row.author_id,
     authorName: row.author_name,
@@ -821,9 +824,9 @@ async function taskActivityComments(env, taskIds) {
     batches.push(all(env.DB.prepare(`
       SELECT
         id, task_id,
-        CASE WHEN thread_id IS NULL THEN NULL ELSE substr(body, 1, 512) END AS body,
+        CASE WHEN thread_id IS NULL AND agent_session IS NULL THEN NULL ELSE substr(body, 1, 512) END AS body,
         thread_id, thread_codex_project_id, thread_codex_project_kind,
-        thread_codex_host_id, thread_workspace_path,
+        thread_codex_host_id, thread_workspace_path, agent_session,
         author_type, author_id, author_name,
         author_avatar_url, version, updated_at
       FROM comments
@@ -1144,7 +1147,7 @@ async function createTask(env, input, actor) {
         assignee_type, assignee_id, assignee_name, assignee_avatar_url,
         development_context_type, development_branch,
         start_date, due_date, recurrence_interval, recurrence_unit,
-        archived_at, version, created_at, updated_at
+        archived_at, version, created_at, updated_at, agent_session
       )
       SELECT
         ?,
@@ -1163,7 +1166,7 @@ async function createTask(env, input, actor) {
         ?, ?, ?, ?,
         ?, ?,
         ?, ?, ?, ?,
-        NULL, 1, ?, ?
+        NULL, 1, ?, ?, ?
       FROM projects
       WHERE projects.id = ?
     `).bind(
@@ -1194,6 +1197,7 @@ async function createTask(env, input, actor) {
       input.recurrence?.unit ?? null,
       timestamp,
       timestamp,
+      input.agentSession ? JSON.stringify(input.agentSession) : null,
       input.projectId,
     ),
     env.DB.prepare(`
@@ -1345,6 +1349,10 @@ async function updateTask(env, id, input, actor) {
     );
     values.push(...storedBinding);
   }
+  if (input.agentSession !== undefined) {
+    assignments.push("agent_session = ?");
+    values.push(input.agentSession ? JSON.stringify(input.agentSession) : null);
+  }
   assignments.push("version = version + 1", "updated_at = ?");
   const timestamp = now();
   values.push(timestamp, current.id, input.version);
@@ -1490,6 +1498,8 @@ async function moveTask(env, id, input, actor) {
   }
   const timestamp = now();
   const storedBinding = storedThreadBindingForExisting(current, input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -1499,14 +1509,14 @@ async function moveTask(env, id, input, actor) {
     SET
       status = ?,
       sort_order = ?,
-      ${threadAssignment}
+      ${threadAssignment}${sessionAssignment}
       version = version + 1,
       updated_at = ?
     WHERE id = ? AND version = ?
   `).bind(
     input.status,
     sortOrder,
-    ...(storedBinding ?? []),
+    ...(storedBinding ?? []), ...sessionValues,
     timestamp,
     current.id,
     input.version,
@@ -1540,6 +1550,8 @@ async function archiveTask(env, id, input, actor) {
   assertTaskVersion(current, input.version);
   const timestamp = now();
   const storedBinding = storedThreadBindingForExisting(current, input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -1548,11 +1560,11 @@ async function archiveTask(env, id, input, actor) {
     UPDATE tasks
     SET
       archived_at = ?,
-      ${threadAssignment}
+      ${threadAssignment}${sessionAssignment}
       version = version + 1,
       updated_at = ?
     WHERE id = ? AND version = ?
-  `).bind(timestamp, ...(storedBinding ?? []), timestamp, current.id, input.version),
+  `).bind(timestamp, ...(storedBinding ?? []), ...sessionValues, timestamp, current.id, input.version),
   taskActivityStatement(
     env,
     current.id,
@@ -1581,6 +1593,8 @@ async function restoreTask(env, id, input, actor) {
   }
   const timestamp = now();
   const storedBinding = storedThreadBindingForExisting(current, input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -1589,11 +1603,11 @@ async function restoreTask(env, id, input, actor) {
     UPDATE tasks
     SET
       archived_at = NULL,
-      ${threadAssignment}
+      ${threadAssignment}${sessionAssignment}
       version = version + 1,
       updated_at = ?
     WHERE id = ? AND version = ?
-  `).bind(...(storedBinding ?? []), timestamp, current.id, input.version),
+  `).bind(...(storedBinding ?? []), ...sessionValues, timestamp, current.id, input.version),
   taskActivityStatement(
     env,
     current.id,
@@ -1696,6 +1710,8 @@ async function addRelation(env, taskId, type, relatedTaskId, input, actor) {
   const endpoints = relationEndpoints(type, task.id, relatedTask.id);
   const timestamp = now();
   const storedBinding = storedThreadBindingForExisting(task, input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -1776,11 +1792,11 @@ async function addRelation(env, taskId, type, relatedTaskId, input, actor) {
     env.DB.prepare(`
       UPDATE tasks
       SET
-        ${threadAssignment}
+        ${threadAssignment}${sessionAssignment}
         version = version + 1,
         updated_at = ?
       WHERE id = ? AND version = ?
-    `).bind(...(storedBinding ?? []), timestamp, task.id, input.version),
+    `).bind(...(storedBinding ?? []), ...sessionValues, timestamp, task.id, input.version),
   );
   const taskUpdateIndex = statements.length - 1;
   statements.push(taskActivityStatement(
@@ -1861,6 +1877,8 @@ async function removeRelation(env, taskId, type, relatedTaskId, input, actor) {
   }
   const timestamp = now();
   const storedBinding = storedThreadBindingForExisting(task, input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -1932,11 +1950,11 @@ async function removeRelation(env, taskId, type, relatedTaskId, input, actor) {
     env.DB.prepare(`
       UPDATE tasks
       SET
-        ${threadAssignment}
+        ${threadAssignment}${sessionAssignment}
         version = version + 1,
         updated_at = ?
       WHERE id = ? AND version = ?${mentionRemoval ? " AND changes() = 1" : ""}
-    `).bind(...(storedBinding ?? []), timestamp, task.id, input.version),
+    `).bind(...(storedBinding ?? []), ...sessionValues, timestamp, task.id, input.version),
     taskActivityStatement(
       env,
       task.id,
@@ -2111,9 +2129,9 @@ async function createComment(env, taskId, input, actor) {
     INSERT INTO comments (
       id, task_id, body, thread_id, thread_codex_project_id, thread_codex_project_kind,
       thread_codex_host_id, thread_workspace_path, author_type, author_id, author_name,
-      author_avatar_url, version, created_at, updated_at, change_revision
+      author_avatar_url, version, created_at, updated_at, change_revision, agent_session
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?,
-      (SELECT revision + 1 FROM global_revision WHERE singleton = 1))
+      (SELECT revision + 1 FROM global_revision WHERE singleton = 1), ?)
   `).bind(
     id,
     task.id,
@@ -2125,6 +2143,7 @@ async function createComment(env, taskId, input, actor) {
     actor.avatarUrl,
     timestamp,
     timestamp,
+    input.agentSession ? JSON.stringify(input.agentSession) : null,
   ).run();
   const row = await env.DB.prepare("SELECT * FROM comments WHERE id = ?").bind(id).first();
   return hydrateComment(env, row);
@@ -2153,6 +2172,8 @@ async function updateComment(env, id, input) {
   const current = await requireCommentRow(env, id);
   assertCommentVersion(current, input.version);
   const storedBinding = storedThreadBinding(input.threadBinding, input.threadId);
+  const sessionAssignment = input.agentSession === undefined ? "" : "agent_session = ?,";
+  const sessionValues = input.agentSession === undefined ? [] : [input.agentSession ? JSON.stringify(input.agentSession) : null];
   const threadAssignment = storedBinding
     ? `thread_id = ?, thread_codex_project_id = ?, thread_codex_project_kind = ?,
       thread_codex_host_id = ?, thread_workspace_path = ?,`
@@ -2161,14 +2182,14 @@ async function updateComment(env, id, input) {
     UPDATE comments
     SET
       body = ?,
-      ${threadAssignment}
+      ${threadAssignment}${sessionAssignment}
       version = version + 1,
       updated_at = ?,
       change_revision = (SELECT revision + 1 FROM global_revision WHERE singleton = 1)
     WHERE id = ? AND version = ?
   `).bind(
     input.body,
-    ...(storedBinding ?? []),
+    ...(storedBinding ?? []), ...sessionValues,
     now(),
     current.id,
     input.version,

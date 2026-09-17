@@ -1441,7 +1441,7 @@ export function createTaskboardServer(options = {}) {
     };
   }
   function resolveInputThreadBinding(input) {
-    if (input.threadBinding !== undefined) return input;
+    if (input.threadBinding !== undefined || input.agentSession) return input;
     const threadBinding = currentHostThreadBinding(input.threadId);
     return threadBinding ? { ...input, threadBinding } : input;
   }
@@ -2534,7 +2534,7 @@ export function createTaskboardServer(options = {}) {
         }
         const relationType = parseIssueRelationType(type);
         if (request.method === "POST") {
-          const { version, threadId, threadBinding, origin } = resolveInputThreadBinding(
+          const { version, threadId, threadBinding, agentSession, origin } = resolveInputThreadBinding(
             parseRelationMutation(await readJson(request)),
           );
           const result = database.addTaskRelation(
@@ -2546,12 +2546,13 @@ export function createTaskboardServer(options = {}) {
             threadBinding,
             actorFromRequest(request),
             origin,
+            agentSession,
           );
           events.emit("task.relation.updated", result);
           return sendJson(response, 200, result);
         }
         if (request.method === "DELETE") {
-          const { version, threadId, threadBinding, origin } = resolveInputThreadBinding(
+          const { version, threadId, threadBinding, agentSession, origin } = resolveInputThreadBinding(
             parseRelationMutation(await readJson(request)),
           );
           const result = database.removeTaskRelation(
@@ -2563,6 +2564,7 @@ export function createTaskboardServer(options = {}) {
             threadBinding,
             actorFromRequest(request),
             origin,
+            agentSession,
           );
           events.emit("task.relation.updated", result);
           return sendJson(response, 200, result);
@@ -2648,6 +2650,7 @@ export function createTaskboardServer(options = {}) {
             patch.body,
             patch.threadId,
             patch.threadBinding,
+            patch.agentSession,
           );
           const task = database.getTask(comment.taskId);
           events.emit("comment.updated", { comment, task });
@@ -2869,6 +2872,7 @@ export function createTaskboardServer(options = {}) {
             changes,
             threadId,
             threadBinding,
+            agentSession,
             assigneeTarget,
           } = resolveInputThreadBinding(parseTaskPatch(await readJson(request), parseDevelopmentContext));
           const source = database.getTaskSource(id);
@@ -2912,7 +2916,7 @@ export function createTaskboardServer(options = {}) {
           }
           let task;
           try {
-            task = database.updateTask(id, version, changes, threadId, threadBinding, actor);
+            task = database.updateTask(id, version, changes, threadId, threadBinding, actor, agentSession);
           } catch (error) {
             if (jiraChanged) {
               try {
@@ -2971,6 +2975,7 @@ export function createTaskboardServer(options = {}) {
             move.threadId,
             move.threadBinding,
             actorFromRequest(request),
+            move.agentSession,
           );
           events.emit("task.moved", { task });
           return sendJson(response, 200, { task });
@@ -2980,7 +2985,7 @@ export function createTaskboardServer(options = {}) {
           if (current?.source === "jira") {
             throw new ApiError(409, "JIRA_ARCHIVE_UNAVAILABLE", "Jira 任务由同步范围自动管理，不能手动归档");
           }
-          const { version, threadId, threadBinding } = resolveInputThreadBinding(
+          const { version, threadId, threadBinding, agentSession } = resolveInputThreadBinding(
             parseVersionMutation(await readJson(request)),
           );
           const task = database.archiveTask(
@@ -2989,6 +2994,7 @@ export function createTaskboardServer(options = {}) {
             threadId,
             threadBinding,
             actorFromRequest(request),
+            agentSession,
           );
           events.emit("task.archived", { task });
           return sendJson(response, 200, { task });
@@ -2998,7 +3004,7 @@ export function createTaskboardServer(options = {}) {
           if (current?.source === "jira") {
             throw new ApiError(409, "JIRA_RESTORE_UNAVAILABLE", "Jira 任务由同步范围自动管理，不能手动恢复");
           }
-          const { version, threadId, threadBinding } = resolveInputThreadBinding(
+          const { version, threadId, threadBinding, agentSession } = resolveInputThreadBinding(
             parseVersionMutation(await readJson(request)),
           );
           const task = database.restoreTask(
@@ -3007,6 +3013,7 @@ export function createTaskboardServer(options = {}) {
             threadId,
             threadBinding,
             actorFromRequest(request),
+            agentSession,
           );
           events.emit("task.restored", { task });
           return sendJson(response, 200, { task });

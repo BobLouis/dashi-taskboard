@@ -1,3 +1,4 @@
+import { agentPlatformLabel, sessionResumeCommand } from "../agentSessions";
 import { resolveInlineAttachments, uploadInlineAttachments } from "../inlineAttachments";
 import {
   useCallback,
@@ -32,6 +33,7 @@ import {
 import { TASK_PRIORITIES, TASK_STATUSES } from "../types";
 import type {
   ActorIdentity,
+  AgentPlatform,
   Attachment,
   Comment,
   CodexThreadBinding,
@@ -332,35 +334,53 @@ function ActivityChangeIcon({ field, before, after }: {
 
 function ConversationLink({
   threadId,
+  agentPlatform,
   onOpen,
   onCopy,
 }: {
   threadId: string;
-  onOpen: () => void;
+  agentPlatform?: AgentPlatform;
+  onOpen?: () => void;
   onCopy: (text: string, announcement: string) => void;
 }) {
   const { text } = useTaskboardI18n();
+  const platform = agentPlatform ?? "codex";
+  const label = agentPlatformLabel(platform);
+  const command = sessionResumeCommand(platform, threadId);
   return (
     <div className="issue-conversation-actions">
-      <button
-        className="issue-conversation-link"
-        type="button"
-        title={text("查看对话", "View conversation")}
-        onClick={onOpen}
-      >
-        <ConversationIcon color="currentColor" size={16} />
-        <strong>{text("查看对话", "View conversation")}</strong>
-      </button>
+      {agentPlatform ? (
+        <span className="issue-conversation-link" title={`${label}: ${threadId}`}>
+          <ConversationIcon color="currentColor" size={16} />
+          <strong>{label}</strong>
+          <span className="issue-conversation-session-id">{threadId}</span>
+        </span>
+      ) : (
+        <button
+          className="issue-conversation-link"
+          type="button"
+          title={text("查看对话", "View conversation")}
+          onClick={onOpen}
+        >
+          <ConversationIcon color="currentColor" size={16} />
+          <strong>{text("查看对话", "View conversation")}</strong>
+        </button>
+      )}
       <button
         className="issue-conversation-copy"
         type="button"
-        title={text("复制终端命令", "Copy terminal command")}
+        title={`${text("复制恢复命令（POSIX shell）", "Copy resume command (POSIX shell)")}: ${command}`}
+        aria-label={agentPlatform
+          ? text(`复制 ${label} 恢复命令`, `Copy ${label} resume command`)
+          : undefined}
         onClick={() => onCopy(
-          `codex resume ${threadId}`,
-          text("Codex 恢复命令已复制。", "Codex resume command copied."),
+          command,
+          text(`${label} 恢复命令已复制。`, `${label} resume command copied.`),
         )}
       >
-        <CodexResumeIcon />
+        {agentPlatform
+          ? <img src={copyIdIcon} width={16} height={16} alt="" />
+          : <CodexResumeIcon />}
         <span>{text("复制终端命令", "Copy terminal command")}</span>
       </button>
     </div>
@@ -1198,18 +1218,27 @@ export function TaskDetail({
                       : text("添加描述…", "Add description…")}
                   </div>
                 )}
-                {(currentTask.threadBinding || currentTask.legacyLocalThreadId) && (
+                {(currentTask.agentSession || currentTask.threadBinding || currentTask.legacyLocalThreadId) && (
                   <div
                     className="issue-conversation-list"
                     aria-label={text("处理此议题的对话", "Conversations for this issue")}
                   >
-                    <ConversationLink
-                      threadId={currentTask.threadBinding?.threadId ?? currentTask.legacyLocalThreadId!}
-                      onOpen={() => currentTask.threadBinding
-                        ? onOpenThread(currentTask.threadBinding)
-                        : onOpenLegacyLocalThread(currentTask.legacyLocalThreadId!)}
-                      onCopy={onCopy}
-                    />
+                    {currentTask.agentSession && (
+                      <ConversationLink
+                        agentPlatform={currentTask.agentSession.platform}
+                        threadId={currentTask.agentSession.sessionId}
+                        onCopy={onCopy}
+                      />
+                    )}
+                    {(currentTask.threadBinding || currentTask.legacyLocalThreadId) && (
+                      <ConversationLink
+                        threadId={currentTask.threadBinding?.threadId ?? currentTask.legacyLocalThreadId!}
+                        onOpen={() => currentTask.threadBinding
+                          ? onOpenThread(currentTask.threadBinding)
+                          : onOpenLegacyLocalThread(currentTask.legacyLocalThreadId!)}
+                        onCopy={onCopy}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1489,15 +1518,24 @@ export function TaskDetail({
                           </div>
                         )
                       )}
-                      {(comment.threadBinding || comment.legacyLocalThreadId) && (
+                      {(comment.agentSession || comment.threadBinding || comment.legacyLocalThreadId) && (
                         <div className="comment-conversation-link">
-                          <ConversationLink
-                            threadId={comment.threadBinding?.threadId ?? comment.legacyLocalThreadId!}
-                            onOpen={() => comment.threadBinding
-                              ? onOpenThread(comment.threadBinding)
-                              : onOpenLegacyLocalThread(comment.legacyLocalThreadId!)}
-                            onCopy={onCopy}
-                          />
+                          {comment.agentSession && (
+                            <ConversationLink
+                              agentPlatform={comment.agentSession.platform}
+                              threadId={comment.agentSession.sessionId}
+                              onCopy={onCopy}
+                            />
+                          )}
+                          {(comment.threadBinding || comment.legacyLocalThreadId) && (
+                            <ConversationLink
+                              threadId={comment.threadBinding?.threadId ?? comment.legacyLocalThreadId!}
+                              onOpen={() => comment.threadBinding
+                                ? onOpenThread(comment.threadBinding)
+                                : onOpenLegacyLocalThread(comment.legacyLocalThreadId!)}
+                              onCopy={onCopy}
+                            />
+                          )}
                         </div>
                       )}
                     </div>
