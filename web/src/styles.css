@@ -3045,7 +3045,38 @@ kbd {
   align-items: center;
   gap: 4px;
   border-radius: 6px;
-  background: var(--surface);
+}
+
+.attachment-local-actions > .icon-button {
+  position: relative;
+}
+
+.attachment-local-actions > .icon-button:hover {
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+}
+
+.attachment-action-tooltip {
+  position: absolute;
+  z-index: 40;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: none;
+  width: max-content;
+  padding: 5px 8px;
+  border: var(--border-hairline) solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  font-size: 11px;
+  line-height: 16px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.attachment-local-actions > .icon-button:hover .attachment-action-tooltip,
+.attachment-local-actions > .icon-button:focus-visible .attachment-action-tooltip {
+  display: block;
 }
 
 .document-attachment-preview > .attachment-local-actions {
@@ -3059,22 +3090,11 @@ kbd {
   padding-right: 80px;
 }
 
-.document-attachment-preview:has(> video) > .attachment-local-actions {
-  top: 8px;
-  transform: none;
-}
-
-.image-preview-dialog > .attachment-local-actions {
-  position: absolute;
-  top: 8px;
-  right: 44px;
-  background: var(--surface-raised);
-}
-
 .issue-description-document .document-attachment-preview + br {
   display: none;
 }
 
+.document-attachment-preview:hover .document-attachment-card,
 .document-attachment-card:hover,
 .issue-description-document a.issue-reference-link:focus-visible > .document-attachment-card,
 .inline-media-attachment:hover,
