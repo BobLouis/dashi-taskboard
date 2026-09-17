@@ -1287,6 +1287,7 @@ kbd {
 
 .task-filter-item {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   width: 100%;
   min-width: 0;
@@ -1348,10 +1349,6 @@ kbd {
   color: var(--text-tertiary);
   font-size: 11px;
   text-overflow: ellipsis;
-}
-
-.task-filter-category.is-active .task-filter-item-summary {
-  color: var(--accent);
 }
 
 .task-filter-chevron {
@@ -1419,6 +1416,7 @@ kbd {
 }
 
 .task-filter-section-label {
+  flex-shrink: 0;
   height: 27px;
   margin: 5px -6px 0;
   padding: 7px 13px 0;
@@ -1429,6 +1427,7 @@ kbd {
 }
 
 .task-filter-unmatched {
+  flex-shrink: 0;
   opacity: 0.56;
 }
 
@@ -1880,6 +1879,14 @@ kbd {
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.task-card-created-at {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .card-topline {
