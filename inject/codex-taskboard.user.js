@@ -1838,6 +1838,9 @@
   }
 
   function isNativePageNavigation(target) {
+    const settingsControl = target?.closest?.("button,a,[role='button'],[role='menuitem']");
+    if (buttonMatches(settingsControl, ["设置", "settings"])) return true;
+
     const clickable = target?.closest?.("button,a,[role='button'],[data-app-action-sidebar-thread-id]");
     if (!clickable || clickable === entry || clickable.closest(`#${ENTRY_ID}`)) return false;
     if (!clickable.closest("aside nav[role='navigation']")) return false;
