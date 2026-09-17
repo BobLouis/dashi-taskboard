@@ -1139,7 +1139,7 @@ function resolveThreadId(options, overrides) {
   const env = overrides.env ?? process.env;
   const value = options["thread-id"] ?? env.CODEX_THREAD_ID;
   if (typeof value !== "string" || value.trim().length === 0) {
-    throw usageError("Conversation attribution requires --agent-platform with --session-id, or Codex --thread-id / CODEX_THREAD_ID");
+    throw usageError("Conversation attribution requires --agent-platform with --session-id, or Codex --thread-id or CODEX_THREAD_ID");
   }
   const threadId = value.trim();
   if (threadId.length > 256) {
