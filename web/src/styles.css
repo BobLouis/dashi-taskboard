@@ -3028,6 +3028,46 @@ kbd {
   transition: border-color 100ms ease, background 100ms ease;
 }
 
+.document-attachment-preview {
+  position: relative;
+  display: block;
+}
+
+.attachment-local-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.document-attachment-preview > .attachment-local-actions {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+}
+
+.document-attachment-preview:has(> .attachment-local-actions) .document-attachment-card {
+  padding-right: 80px;
+}
+
+.document-attachment-preview:has(> video) > .attachment-local-actions {
+  top: 8px;
+  transform: none;
+}
+
+.image-preview-dialog > .attachment-local-actions {
+  position: absolute;
+  top: 8px;
+  right: 44px;
+  background: var(--surface-raised);
+}
+
+.issue-description-document .document-attachment-preview + br {
+  display: none;
+}
+
 .document-attachment-card:hover,
 .issue-description-document a.issue-reference-link:focus-visible > .document-attachment-card,
 .inline-media-attachment:hover,
