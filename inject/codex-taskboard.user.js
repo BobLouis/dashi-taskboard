@@ -1853,7 +1853,10 @@
 
   function isNativePageNavigation(target) {
     const settingsControl = target?.closest?.("button,a,[role='button'],[role='menuitem']");
-    if (buttonMatches(settingsControl, ["设置", "settings"])) return true;
+    const settingsLabel = settingsControl?.cloneNode(true);
+    settingsLabel?.querySelectorAll("span.ms-2.shrink-0.text-xs.text-codex-description")
+      .forEach((shortcut) => shortcut.remove());
+    if (buttonMatches(settingsLabel, ["设置", "settings"])) return true;
 
     const clickable = target?.closest?.("button,a,[role='button'],[data-app-action-sidebar-thread-id]");
     if (!clickable || clickable === entry || clickable.closest(`#${ENTRY_ID}`)) return false;
