@@ -1244,6 +1244,7 @@
               item: response.item,
               items: response.items,
               quota: response.quota,
+              idleReason: response.idleReason,
               policy: response.policy,
             },
       });
