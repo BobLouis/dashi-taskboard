@@ -717,7 +717,7 @@ test("project and task CRUD flow", async () => {
   assert.equal(created.threadId, "thread-123");
   assert.equal(created.creatorType, "user");
   assert.equal(created.creatorId, "local-user");
-  assert.equal(created.creatorName, "本地用户");
+  assert.equal(created.creatorName, "本地使用者");
   assert.equal(created.creatorAvatarUrl, null);
   assert.deepEqual(created.developmentContext, {
     type: "worktree",
@@ -1312,7 +1312,7 @@ test("issue comments can be created, edited, listed, and deleted", async () => {
   assert.deepEqual(comment.attachments, []);
   assert.equal(comment.authorType, "user");
   assert.equal(comment.authorId, "local-user");
-  assert.equal(comment.authorName, "本地用户");
+  assert.equal(comment.authorName, "本地使用者");
   assert.equal(comment.version, 1);
 
   const listResult = await request(baseUrl, `/api/tasks/${task.id}/comments`);

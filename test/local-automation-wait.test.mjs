@@ -288,8 +288,8 @@ test("new executable legacy-bound todo resumes the same cron without touching wa
   assert.ok(h.models.every((entry) => entry.input.identifier !== "LOCAL-worker"));
   assert.deepEqual(h.tasks, before);
   assert.ok(h.apiCalls.every((call) => call.method === "GET"));
-  assert.match(h.item.prompt, /legacy local 原位升级为完整 binding/);
-  assert.match(h.item.prompt, /只能使用保存的 threadId 和 codexHostId/);
+  assert.match(h.item.prompt, /legacy local 原位升級為完整 binding/);
+  assert.match(h.item.prompt, /只能使用儲存的 threadId 和 codexHostId/);
 });
 
 test("description and latest-comment edits invalidate waiting decisions, including edits during preflight", async (t) => {

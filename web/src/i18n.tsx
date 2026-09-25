@@ -60,7 +60,7 @@ const PRIORITY_LABELS: Record<TaskboardLanguage, Record<TaskPriority, string>> =
   },
 };
 
-const TaskboardLanguageContext = createContext<TaskboardLanguage>("zh");
+const TaskboardLanguageContext = createContext<TaskboardLanguage>("en");
 
 export function resolveTaskboardLanguage(value: string | null | undefined): TaskboardLanguage {
   const normalized = value?.trim().replaceAll("_", "-").toLowerCase() ?? "";

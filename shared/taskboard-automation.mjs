@@ -182,7 +182,8 @@ export async function reconcileTaskboardAutomation(request, rpc) {
   const listed = await rpc("list-automations", {});
   const items = Array.isArray(listed?.items) ? listed.items : [];
   const name = buildTaskboardAutomationName(request);
-  const matchingItems = items.filter((item) => item?.name === name);
+  const legacyName = `Taskboard 自动认领 · ${request.taskboardProjectId}`;
+  const matchingItems = items.filter((item) => item?.name === name || item?.name === legacyName);
 
   if (request.operation === "list") {
     return { items: matchingItems.map(sanitizeAutomation).filter(Boolean) };
