@@ -1,11 +1,11 @@
-# DeepSeek Harness plugin
+# DeepSeek Harness 外掛
 
-This directory is an installable DeepSeek Harness bundle. It adds a Taskboard entry to the Harness sidebar and opens the active installed Codex Taskboard runtime.
+此目錄是可安裝的 DeepSeek Harness 套件。它會在 Harness 側邊欄新增 Taskboard 項目，並開啟目前安裝的 Codex Taskboard 執行環境。
 
-From a DeepSeek Harness source checkout, install it into the Web profile:
+在 DeepSeek Harness 原始碼工作目錄中，將此外掛安裝到 Web 設定檔：
 
 ```sh
 pnpm dsh plugin --profile web add /absolute/path/to/codex-taskboard/integrations/deepseek-harness
 ```
 
-Start Codex Taskboard before opening the entry. The plugin reads the launcher-owned runtime file, so it does not depend on a fixed port.
+開啟側邊欄項目前，請先啟動 Codex Taskboard。外掛會讀取啟動器管理的執行階段檔案，因此不需要固定連接埠。

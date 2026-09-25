@@ -1,51 +1,31 @@
-# Code signing policy
+# 程式碼簽署政策
 
-For official Windows releases after the application is approved: **Free code
-signing provided by [SignPath.io](https://signpath.io/), certificate by
-[SignPath Foundation](https://signpath.org/).** Current Windows
-continuous-integration artifacts remain unsigned until that approval.
+應用程式核准後，正式 Windows 版本將採用 [SignPath.io](https://signpath.io/) 提供的免費程式碼簽署，憑證由 [SignPath Foundation](https://signpath.org/) 提供。在核准前，目前的 Windows CI 成品仍未簽署。
 
-## Scope
+## 適用範圍
 
-This policy applies to official Windows executables and installers published
-by the Codex Taskboard project. Development builds, pull-request artifacts,
-and local builds are not signed.
+本政策適用於 Codex Taskboard 專案發布的正式 Windows 執行檔與安裝程式。開發建置、pull request 成品和本機建置不會簽署。
 
-## Team roles
+## 團隊角色
 
-- Authors and committers: [@jadon7](https://github.com/jadon7) and
-  [@chuspeeism](https://github.com/chuspeeism).
-- Reviewers: [@jadon7](https://github.com/jadon7) and
-  [@chuspeeism](https://github.com/chuspeeism). Changes from other
-  contributors are reviewed through pull requests before merge.
-- Approver: repository owner
-  [@chuspeeism](https://github.com/chuspeeism). Every signing request requires
-  manual approval.
+- 作者與提交者：[\@jadon7](https://github.com/jadon7) 和 [\@chuspeeism](https://github.com/chuspeeism)。
+- 審查者：[\@jadon7](https://github.com/jadon7) 和 [\@chuspeeism](https://github.com/chuspeeism)。其他貢獻者的變更會透過 pull request 審查後再合併。
+- 核准者：repository 擁有者 [\@chuspeeism](https://github.com/chuspeeism)。每次簽署申請都需要人工核准。
 
-## Build and approval
+## 建置與核准
 
-- Signing inputs must come from the public repository and a GitHub-hosted
-  Actions workflow. Artifacts built on a developer computer are not eligible.
-- The source revision and workflow run must be recorded for each signed
-  artifact.
-- A project maintainer must review the release changes and manually approve
-  every signing request.
-- Signing roles must use individual accounts with multi-factor authentication.
-  Signing credentials must not be stored in the repository or workflow logs.
-- A signed artifact must be published without modification after signing.
+- 簽署所用的輸入檔必須來自公開 repository 和 GitHub 託管的 Actions 工作流程。本機電腦建置的成品不符合資格。
+- 每個簽署成品都必須記錄來源修訂版本和工作流程執行紀錄。
+- 專案維護者必須審查發布變更，並人工核准每一項簽署申請。
+- 簽署角色必須使用個人帳戶並啟用多重要素驗證。簽署憑證不得儲存在 repository 或工作流程 log 中。
+- 簽署後發布的成品不得再修改。
 
-## Privacy
+## 隱私權
 
-Codex Taskboard's data handling and network activity are documented in the
-[Privacy policy](../PRIVACY.md).
+Codex Taskboard 的資料處理方式和網路活動詳見[隱私權政策](../PRIVACY.md)。
 
-## Incident response
+## 事故應變
 
-If a signing credential or signed artifact is suspected to be compromised,
-maintainers stop signing and distribution, preserve the related workflow and
-artifact records, notify the signing provider, and request certificate
-revocation when required. A replacement release is built from a reviewed
-source revision after the incident is resolved.
+若懷疑簽署憑證或已簽署成品遭到入侵，維護者會停止簽署和發佈、保留相關工作流程及成品紀錄、通知簽署服務提供者，並在必要時要求撤銷憑證。事件處理完成後，會根據經審查的來源修訂版本重新建置替代版本。
 
-Security reports should use the repository's private vulnerability-reporting
-channel. Non-sensitive signing questions can use the public issue tracker.
+安全性問題請使用 repository 的私密弱點通報管道。非敏感的簽署問題可在公開 issue tracker 提出。

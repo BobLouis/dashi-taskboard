@@ -1,4 +1,4 @@
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.md)
 
 # Codex Taskboard
 
@@ -10,7 +10,7 @@
 
 - Node.js 22.5 或更新版本
 - 建置 macOS App 和 DMG：Xcode Command Line Tools、Rust 1.88 或更新版本，以及 `aarch64-apple-darwin` 和 `x86_64-apple-darwin` target。`npm install` 會安裝本專案使用的 Tauri CLI。
-- 建置 Windows NSIS：Microsoft Store 版 Codex App、Rust 1.88 或更新版本，以及具備 C++ 工作負載和 Windows SDK 的 Visual Studio Build Tools。
+- 建置 Windows NSIS：Microsoft Store 版 Codex App、Rust 1.88 或更新版本，以及帶 C++ 工作負載和 Windows SDK 的 Visual Studio Build Tools。
 
 ## 本機執行
 
